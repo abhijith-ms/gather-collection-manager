@@ -23,7 +23,14 @@ function Empty({title,description,action}:{title:string;description:string;actio
 
 function PasswordForm({onChanged}:{onChanged:(profile:Profile)=>void}) {
   const [busy,setBusy]=useState(false);const [error,setError]=useState("");const [saved,setSaved]=useState(false);
-  return <form className="space-y-4" onSubmit={async event=>{event.preventDefault();setBusy(true);setError("");setSaved(false);const data=new FormData(event.currentTarget);try{validatePasswordChange(data.get("current"),data.get("new"));const result=await api<{profile:Profile}>("password",{method:"POST",body:JSON.stringify({currentPassword:data.get("current"),newPassword:data.get("new")})});setSaved(true);onChanged(result.profile);}catch(error){setError((error as Error).message);}finally{setBusy(false);}}}><Field label="Current or temporary password"><Input type="password" name="current" autoComplete="current-password" maxLength={200} required/></Field><Field label="New password" hint="At least 12 characters; different from your current password"><Input type="password" name="new" autoComplete="new-password" minLength={12} maxLength={200} required/></Field>{error&&<p role="alert" className="text-sm text-red-700">{error}</p>}{saved&&<p role="status" className="text-sm text-primary">Password updated.</p>}<Button disabled={busy}>{busy?<Loader2 className="animate-spin"/>:<KeyRound/>}Change password</Button></form>;
+  const [showPasswords,setShowPasswords]=useState(false);
+  return <form className="space-y-4" onInput={()=>{setError("");setSaved(false);}} onSubmit={async event=>{event.preventDefault();setBusy(true);setError("");setSaved(false);const data=new FormData(event.currentTarget);try{validatePasswordChange(data.get("current"),data.get("new"));const result=await api<{profile:Profile}>("password",{method:"POST",body:JSON.stringify({currentPassword:data.get("current"),newPassword:data.get("new")})});setSaved(true);onChanged(result.profile);}catch(error){setError((error as Error).message);}finally{setBusy(false);}}}>
+    <Field label="Current or temporary password" hint="Use the password you signed in with."><Input type={showPasswords?"text":"password"} name="current" autoComplete="current-password" maxLength={200} required/></Field>
+    <Field label="New password" hint="At least 12 characters; different from your current password"><Input type={showPasswords?"text":"password"} name="new" autoComplete="new-password" minLength={12} maxLength={200} required/></Field>
+    <Button type="button" variant="ghost" size="sm" aria-pressed={showPasswords} onClick={()=>setShowPasswords(!showPasswords)}>{showPasswords?"Hide passwords":"Show passwords"}</Button>
+    {error&&<p role="alert" className="text-sm text-red-700">{error}</p>}{saved&&<p role="status" className="text-sm text-primary">Password updated.</p>}
+    <div><Button disabled={busy}>{busy?<Loader2 className="animate-spin"/>:<KeyRound/>}Change password</Button></div>
+  </form>;
 }
 function Login({demo,onLogin}:{demo:boolean;onLogin:(profile:Profile)=>void}) {
   const [busy,setBusy]=useState(false); const [error,setError]=useState("");
