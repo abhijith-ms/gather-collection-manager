@@ -69,6 +69,8 @@ Exports contain Contributors, Payments, and Handovers sheets. Calculated balance
 
 ## Hosting and recovery
 
+This deployment uses the private [GitHub repository](https://github.com/abhijith-ms/gather-collection-manager), [Vercel app](https://gather-collection-manager.vercel.app), and dedicated [Supabase project](https://supabase.com/dashboard/project/tfftliguhvgwhkidvfrz). Supabase and the Vercel server functions run in Singapore. Vercel is connected to GitHub; pushes to `main` trigger production deployments. Configure production credentials in Vercel, keeping the server key secret. Preview deployments need their own backend configuration before login is usable.
+
 Use Vercel with `APP_DEMO_MODE=false` and the three Supabase environment variables, Node 22+, and build command `npm run build`. The Hobby tier is subject to personal/noncommercial eligibility. Review hosting eligibility before organizational use. Free Supabase projects may pause; they are not an availability guarantee.
 
 Before real collection, use an appropriate hosted plan and an encrypted, access-controlled backup destination. With the Supabase CLI installed and a linked project:
