@@ -1,0 +1,46 @@
+import assert from 'node:assert/strict';
+import {randomUUID,randomBytes} from 'node:crypto';
+const base=process.argv[2] || 'http://localhost:3100';
+function client(){
+  let cookie='';
+  return async(route,data)=>{
+    const multipart=data instanceof FormData;
+    const response=await fetch(`${base}/api/${route}`,{method:data===undefined?'GET':'POST',headers:{Origin:base,...(cookie?{Cookie:cookie}:{}),...(data===undefined||multipart?{}:{'Content-Type':'application/json'})},body:data===undefined?undefined:multipart?data:JSON.stringify(data)});
+    const updated=response.headers.getSetCookie(); if(updated.length)cookie=updated.map(c=>c.split(';')[0]).join('; ');
+    const value=response.headers.get('Content-Type')?.includes('application/json')?await response.json():new Uint8Array(await response.arrayBuffer());
+    return {status:response.status,value,headers:response.headers};
+  };
+}
+const admin=client(), collector=client(), temporary=client();
+assert.equal((await admin('session')).value.demo,true,'Only run this check against the local demo');
+assert.equal((await admin('workspace')).status,401);
+assert.equal((await fetch(`${base}/api/login`,{method:'POST',headers:{Origin:'https://invalid.example','Content-Type':'application/json'},body:'{}'})).status,403);
+assert.equal((await admin('login',{username:'admin',password:'GatherDemo123!'})).status,200);
+const workspace=await admin('workspace');assert.equal(workspace.value.profile.role,'admin');assert.match(workspace.headers.get('cache-control'),/no-store/);
+assert.equal((await collector('login',{username:'col-001',password:'GatherDemo123!'})).status,200);
+assert.ok((await collector('workspace')).value.contributors.every(p=>p.collector_id==='22222222-2222-4222-8222-222222222222'));
+assert.equal((await collector('accounts',{name:'Should not exist'})).status,403);
+const made=await admin('accounts',{name:'Verification Collector (demo)'});assert.equal(made.status,200);
+const {id,username,password}=made.value;
+assert.equal((await temporary('login',{username,password})).value.profile.must_change_password,true);
+assert.equal((await temporary('workspace')).status,401);
+const ownPassword=`Verified-${randomBytes(12).toString('hex')}`;
+assert.equal((await temporary('password',{currentPassword:password,newPassword:ownPassword})).status,200);
+assert.equal((await temporary('workspace')).status,200);
+const campaign=workspace.value.campaigns[0];
+const file=await admin(`excel/export?campaign=${campaign.id}`);assert.equal(file.status,200);
+const form=new FormData();form.set('file',new Blob([file.value]),'report.xlsx');form.set('campaign_id',campaign.id);form.set('collector_id','22222222-2222-4222-8222-222222222222');
+const preview=await admin('excel/preview',form);assert.equal(preview.status,200);assert.equal(preview.value.errors,0);
+const reset=await admin('accounts/reset',{id,key:randomUUID()});assert.equal(reset.status,200);
+assert.equal((await temporary('workspace')).status,401);
+assert.equal((await temporary('login',{username,password:ownPassword})).status,400);
+assert.equal((await temporary('login',{username,password:reset.value.password})).value.profile.must_change_password,true);
+assert.equal((await temporary('password',{currentPassword:reset.value.password,newPassword:ownPassword})).status,200);
+assert.equal((await admin('command',{action:'collector.status',payload:{id,active:false},key:randomUUID()})).status,200);
+assert.equal((await temporary('workspace')).status,401);
+assert.equal((await admin('command',{action:'collector.status',payload:{id,active:true},key:randomUUID()})).status,200);
+assert.equal((await temporary('workspace')).status,401);
+assert.equal((await temporary('login',{username,password:ownPassword})).status,200);
+assert.equal((await temporary('workspace')).status,200);
+assert.equal((await admin('command',{action:'collector.status',payload:{id,active:false},key:randomUUID()})).status,200);
+console.log('HTTP checks passed: authentication, permissions, password reset, session revocation, export and multipart import preview. Verification account left disabled.');

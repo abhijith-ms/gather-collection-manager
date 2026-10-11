@@ -1,0 +1,4 @@
+import { cn } from "@/lib/utils";
+export function Input({className,...props}:React.ComponentProps<"input">) {return <input className={cn("flex h-10 w-full rounded-lg border border-border bg-white px-3 text-sm outline-none placeholder:text-muted-foreground focus:ring-2 focus:ring-primary/25 focus:border-primary disabled:opacity-50",className)} {...props}/>;}
+export function Select({className,children,...props}:React.ComponentProps<"select">) {return <select className={cn("h-10 w-full rounded-lg border border-border bg-white px-3 text-sm focus:ring-2 focus:ring-primary/25 outline-none",className)} {...props}>{children}</select>;}
+export function Field({label,children,hint}: {label:string;children:React.ReactNode;hint?:string}) {return <label className="block space-y-1.5 text-sm font-medium"><span>{label}</span>{children}{hint && <span className="block text-xs font-normal text-muted-foreground">{hint}</span>}</label>;}
