@@ -7,6 +7,7 @@ import { context, isDemo, supabaseServer, supabaseAdmin, alias, rpc, workspace, 
 import { demoDatabase, passwordHash, passwordMatches } from "@/lib/demo";
 import { previewWorkbook, exportWorkbook } from "@/lib/excel";
 import { boundedBody } from "@/lib/request-body";
+import { validatePasswordChange } from "@/lib/utils";
 import type { Profile } from "@/lib/types";
 
 export const runtime="nodejs";
@@ -58,7 +59,7 @@ async function handle(request:NextRequest,{params}:{params:Promise<{path:string[
     }
     if(route==="password" && post) {
       const profile=await context(true); const {currentPassword,newPassword}=await body(request);
-      if(typeof currentPassword!=="string" || currentPassword.length>200 || typeof newPassword!=="string" || newPassword.length<12 || newPassword.length>200 || newPassword===currentPassword) throw new Error("Use a different password with 12–200 characters");
+      validatePasswordChange(currentPassword,newPassword);
       if(isDemo()) {
         const db=await demoDatabase(); const stored=await db.query<{hash:string}>("select hash from demo_passwords where user_id=$1",[profile.id]);
         if(!passwordMatches(currentPassword,stored.rows[0].hash)) throw new Error("Current password is incorrect");

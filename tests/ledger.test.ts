@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { newLedger, asUser, DEMO_ADMIN, DEMO_COLLECTOR, DEMO_OTHER, DEMO_CAMPAIGN } from "../src/lib/demo";
-import { amountToPaise, contributorBalance, custody, phoneNumber } from "../src/lib/utils";
+import { amountToPaise, contributorBalance, custody, phoneNumber, validatePasswordChange } from "../src/lib/utils";
 import { exportWorkbook, previewWorkbook } from "../src/lib/excel";
 import type { Payment, Workspace } from "../src/lib/types";
 import ExcelJS from "exceljs";
@@ -28,6 +28,14 @@ test("amounts use exact paise and reject invalid inputs",()=>{
   assert.equal(amountToPaise("0.29"),29); assert.equal(amountToPaise("1000.01"),100001);
   for(const value of ["0","-1","1.001","Infinity","1e3","₹500"]) assert.throws(()=>amountToPaise(value));
   assert.equal(phoneNumber("98765 43210"),"+919876543210"); assert.throws(()=>phoneNumber("123"));
+});
+test("password changes distinguish missing, invalid-length and reused passwords",()=>{
+  const current="Current-password!";
+  for(const value of [null,"","a".repeat(201)]) assert.throws(()=>validatePasswordChange(value,"Different-password!"),/Enter your current password/);
+  for(const value of [null,"a".repeat(11),"a".repeat(201)]) assert.throws(()=>validatePasswordChange(current,value),/12–200 characters/);
+  assert.throws(()=>validatePasswordChange(current,current),/different from your current password/);
+  assert.doesNotThrow(()=>validatePasswordChange(current,"a".repeat(12)));
+  assert.doesNotThrow(()=>validatePasswordChange(current,"a".repeat(200)));
 });
 test("chunked requests enforce their byte limit before parsing",async()=>{
   const request=()=>new Request("http://localhost",{method:"POST",body:new ReadableStream({start(controller){controller.enqueue(new Uint8Array(4));controller.enqueue(new Uint8Array(4));controller.close();}}),duplex:"half"} as RequestInit);

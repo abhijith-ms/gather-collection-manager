@@ -18,6 +18,11 @@ export function phoneNumber(value: string): string {
   if (!/^\+[1-9]\d{7,14}$/.test(phone)) throw new Error("Enter a valid phone number with country code");
   return phone;
 }
+export function validatePasswordChange(current: unknown, next: unknown) {
+  if (typeof current !== "string" || !current || current.length > 200) throw new Error("Enter your current password");
+  if (typeof next !== "string" || next.length < 12 || next.length > 200) throw new Error("New password must contain 12–200 characters");
+  if (next === current) throw new Error("New password must be different from your current password");
+}
 export function dateTime(value: string) { return new Intl.DateTimeFormat("en-IN", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Kolkata" }).format(new Date(value)); }
 export function shortDate(value: string) { return new Intl.DateTimeFormat("en-IN", { day: "numeric", month: "short", year: "numeric", timeZone: "Asia/Kolkata" }).format(new Date(value)); }
 export function indiaToday() { return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date()); }

@@ -7,7 +7,7 @@ import { Field, Input, Select } from "./ui/input";
 import { Modal } from "./ui/dialog";
 import { FormDialogs, type FormDialog } from "./forms";
 import { ReceiptDialog } from "./receipt-dialog";
-import { api, amountToPaise, cn, contributorBalance, custody, dateTime, money, shortDate } from "@/lib/utils";
+import { api, amountToPaise, cn, contributorBalance, custody, dateTime, money, shortDate, validatePasswordChange } from "@/lib/utils";
 import type { Campaign, Contributor, Handover, Payment, Profile, Workspace } from "@/lib/types";
 
 type View="overview"|"contributors"|"payments"|"handovers"|"campaigns"|"collectors"|"activity"|"settings";
@@ -23,7 +23,7 @@ function Empty({title,description,action}:{title:string;description:string;actio
 
 function PasswordForm({onChanged}:{onChanged:(profile:Profile)=>void}) {
   const [busy,setBusy]=useState(false);const [error,setError]=useState("");const [saved,setSaved]=useState(false);
-  return <form className="space-y-4" onSubmit={async event=>{event.preventDefault();setBusy(true);setError("");setSaved(false);const data=new FormData(event.currentTarget);try{const result=await api<{profile:Profile}>("password",{method:"POST",body:JSON.stringify({currentPassword:data.get("current"),newPassword:data.get("new")})});setSaved(true);onChanged(result.profile);}catch(error){setError((error as Error).message);}finally{setBusy(false);}}}><Field label="Current or temporary password"><Input type="password" name="current" autoComplete="current-password" required/></Field><Field label="New password" hint="At least 12 characters; different from your current password"><Input type="password" name="new" autoComplete="new-password" minLength={12} maxLength={200} required/></Field>{error&&<p role="alert" className="text-sm text-red-700">{error}</p>}{saved&&<p role="status" className="text-sm text-primary">Password updated.</p>}<Button disabled={busy}>{busy?<Loader2 className="animate-spin"/>:<KeyRound/>}Change password</Button></form>;
+  return <form className="space-y-4" onSubmit={async event=>{event.preventDefault();setBusy(true);setError("");setSaved(false);const data=new FormData(event.currentTarget);try{validatePasswordChange(data.get("current"),data.get("new"));const result=await api<{profile:Profile}>("password",{method:"POST",body:JSON.stringify({currentPassword:data.get("current"),newPassword:data.get("new")})});setSaved(true);onChanged(result.profile);}catch(error){setError((error as Error).message);}finally{setBusy(false);}}}><Field label="Current or temporary password"><Input type="password" name="current" autoComplete="current-password" maxLength={200} required/></Field><Field label="New password" hint="At least 12 characters; different from your current password"><Input type="password" name="new" autoComplete="new-password" minLength={12} maxLength={200} required/></Field>{error&&<p role="alert" className="text-sm text-red-700">{error}</p>}{saved&&<p role="status" className="text-sm text-primary">Password updated.</p>}<Button disabled={busy}>{busy?<Loader2 className="animate-spin"/>:<KeyRound/>}Change password</Button></form>;
 }
 function Login({demo,onLogin}:{demo:boolean;onLogin:(profile:Profile)=>void}) {
   const [busy,setBusy]=useState(false); const [error,setError]=useState("");
